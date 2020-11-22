@@ -19,10 +19,6 @@ def rand_color():
 
 
 class Shell: #создаёт пульку, отвеает за её движение и отрисовку
-    '''
-    The ball class. Creates a ball, controls it's movement and implement it's rendering.
-    '''
-
     def __init__(self, coord, vel, rad=20, color=None):
         self.coord = coord
         self.vel = vel
@@ -54,6 +50,11 @@ class Shell: #создаёт пульку, отвеает за её движен
     def draw(self, screen): #рисует шарик (пульку) на поверхности
         pg.draw.circle(screen, self.color, self.coord, self.rad)
 
+    def draw2(self, screen): #рисует шарик (пульку) на поверхности
+        pg.draw.circle(screen, self.color, self.coord, self.rad, randint(0, 10))
+
+
+
 
 class Cannon:
 
@@ -84,9 +85,14 @@ class Cannon:
     def set_angle(self, target_pos):
         self.angle = np.arctan2(target_pos[1] - self.coord[1], target_pos[0] - self.coord[0])
 
-    def move(self, inc):
-        if (self.coord[1] > 30 or inc > 0) and (self.coord[1] < SCREEN_SIZE[1] - 30 or inc < 0):
-            self.coord[1] += inc
+    #эти два def двигают пушку по вертикали и по горизонтали
+    def move_x(self, inc):
+        if ((self.coord[0] > 30 or inc > 0) and
+                (self.coord[0] < SCREEN_SIZE[1] - 30 or inc < 0)):self.coord[0] += inc
+
+    def move_y(self, inc):
+            if ((self.coord[1] > 30 or inc > 0) and
+                    (self.coord[1] < SCREEN_SIZE[1] - 30 or inc < 0)):self.coord[1] += inc
 
     def draw(self, screen): #рисует ПУШКУ
         gun_shape = []
@@ -180,11 +186,8 @@ class MovingTarget(Target2): #неожиданно, но оно двигает �
         self.coord[0] += self.vx
 
 
-
+#для таблицы подсчёта очков и метода вычисления очков
 class ScoreTable:
-    '''
-    Score table class.
-    '''
 
     def __init__(self, t_destr=0, b_used=0):
         self.t_destr = t_destr
@@ -192,16 +195,13 @@ class ScoreTable:
         self.font = pg.font.SysFont("arial", 30)
 
     def score(self):
-        '''
-        Score calculation method.
-        '''
         return self.t_destr - self.b_used
 
     def draw(self, screen):
         score_surf = []
-        score_surf.append(self.font.render("Destroyed: {}".format(self.t_destr), True, WHITE))
-        score_surf.append(self.font.render("Balls used: {}".format(self.b_used), True, WHITE))
-        score_surf.append(self.font.render("Total: {}".format(self.score()), True, RED))
+        score_surf.append(self.font.render("Сбито: {}".format(self.t_destr), True, WHITE))
+        score_surf.append(self.font.render("Количесвтво нарядов: {}".format(self.b_used), True, WHITE))
+        score_surf.append(self.font.render("Итоговый счёт: {}".format(self.score()), True, RED))
         for i in range(3):
             screen.blit(score_surf[i], [10, 10 + 30 * i])
 
@@ -248,9 +248,13 @@ class Manager:  #manager, который курирует собития, дви
                 done = True
             elif event.type == pg.KEYDOWN:
                 if event.key == pg.K_UP:
-                    self.gun.move(-5)
+                    self.gun.move_y(-5)
                 elif event.key == pg.K_DOWN:
-                    self.gun.move(5)
+                    self.gun.move_y(5)
+                elif event.key == pg.K_LEFT:
+                    self.gun.move_x(-5)
+                elif event.key == pg.K_RIGHT:
+                    self.gun.move_x(5)
             elif event.type == pg.MOUSEBUTTONDOWN:
                 if event.button == 1:
                     self.gun.activate()
@@ -258,11 +262,17 @@ class Manager:  #manager, который курирует собития, дви
                 if event.button == 1:
                     self.balls.append(self.gun.strike())
                     self.score_t.b_used += 1
+                    self.gun.color = BLACK
         return done
 
     def draw(self, screen): #рисует снаряд пушку и цель, и счётчик очков
         for ball in self.balls:
-            ball.draw(screen)
+            tmp = randint(1, 2)
+            if tmp == 1:
+                ball.draw(screen)
+            if tmp == 2:
+                ball.draw2(screen)
+
         for target in self.targets:
             target.draw(screen)
         self.gun.draw(screen)
@@ -300,7 +310,7 @@ screen = pg.display.set_mode(SCREEN_SIZE)
 done = False
 clock = pg.time.Clock()
 
-mgr = Manager(n_targets=4)
+mgr = Manager(n_targets=5)
 
 #обновляет экран и запускает игрульку
 while not done:
